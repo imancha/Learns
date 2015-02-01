@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Jan 30, 2015 at 10:21 PM
+-- Generation Time: Feb 02, 2015 at 01:02 AM
 -- Server version: 5.5.40-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.5
 
@@ -80,20 +80,22 @@ CREATE TABLE IF NOT EXISTS `Kelas` (
   `Alamat` text NOT NULL,
   `Kuota` int(11) NOT NULL,
   `Terisi` int(11) NOT NULL,
+  `Pembuat` int(11) NOT NULL,
   `ID Materi` int(11) NOT NULL,
   PRIMARY KEY (`ID`),
-  KEY `ID Materi` (`ID Materi`)
+  KEY `ID Materi` (`ID Materi`),
+  KEY `Pembuat` (`Pembuat`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=5 ;
 
 --
 -- Dumping data for table `Kelas`
 --
 
-INSERT INTO `Kelas` (`ID`, `Tanggal`, `Jam`, `Lokasi`, `Alamat`, `Kuota`, `Terisi`, `ID Materi`) VALUES
-(1, '2015-01-31', '20:45:00', 'Dago', 'Jalan Dipatiukur No.123 Bandung', 11, 0, 1),
-(2, '2015-02-01', '22:00:00', 'Dago', 'Jalan Dipatiukur No. 123 Bandung', 20, 1, 2),
-(3, '2015-02-02', '22:15:00', 'Pusdai', 'Jalan Suci No. 234 Bandung', 12, 1, 3),
-(4, '2015-02-03', '22:15:00', 'Gasibu', 'Jalan Japati No. 345 Bandung', 11, 0, 4);
+INSERT INTO `Kelas` (`ID`, `Tanggal`, `Jam`, `Lokasi`, `Alamat`, `Kuota`, `Terisi`, `Pembuat`, `ID Materi`) VALUES
+(1, '2015-01-31', '20:45:00', 'Dago', 'Jalan Dipatiukur No.123 Bandung', 11, 0, 1, 1),
+(2, '2015-02-01', '22:00:00', 'Dago', 'Jalan Dipatiukur No. 123 Bandung', 20, 1, 1, 2),
+(3, '2015-02-02', '22:15:00', 'Pusdai', 'Jalan Suci No. 234 Bandung', 12, 0, 1, 3),
+(4, '2015-02-03', '22:15:00', 'Gasibu', 'Jalan Japati No. 345 Bandung', 11, 1, 1, 4);
 
 -- --------------------------------------------------------
 
@@ -135,8 +137,8 @@ CREATE TABLE IF NOT EXISTS `Pelajar` (
 --
 
 INSERT INTO `Pelajar` (`ID Kelas`, `ID User`) VALUES
-(2, 1),
-(3, 1);
+(4, 1),
+(2, 1);
 
 -- --------------------------------------------------------
 
@@ -157,7 +159,7 @@ CREATE TABLE IF NOT EXISTS `Pengajar` (
 
 INSERT INTO `Pengajar` (`ID Kelas`, `ID User`) VALUES
 (1, 1),
-(4, 1);
+(3, 1);
 
 -- --------------------------------------------------------
 
@@ -270,6 +272,7 @@ CREATE TABLE IF NOT EXISTS `User` (
   `Kota` varchar(45) NOT NULL,
   `Phone` varchar(15) NOT NULL,
   `Waktu` datetime NOT NULL,
+  `Avatar` varchar(10) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
 
@@ -277,8 +280,8 @@ CREATE TABLE IF NOT EXISTS `User` (
 -- Dumping data for table `User`
 --
 
-INSERT INTO `User` (`ID`, `Username`, `Password`, `Nama`, `Email`, `Kota`, `Phone`, `Waktu`) VALUES
-(1, 'imancha', 'eb2f3b2278c1eb606a02a227fce6b51a1d1fec4e', 'Mohammad Abdul Iman Syah', 'imancha_266@ymail.com', 'Cirebon', '085224057100', '2015-01-30 15:11:20');
+INSERT INTO `User` (`ID`, `Username`, `Password`, `Nama`, `Email`, `Kota`, `Phone`, `Waktu`, `Avatar`) VALUES
+(1, 'imancha', 'eb2f3b2278c1eb606a02a227fce6b51a1d1fec4e', 'Mohammad Abdul Iman Syah', 'imancha_266@ymail.com', 'Cirebon', '085224057100', '2015-01-30 15:11:20', '1.png');
 
 --
 -- Constraints for dumped tables
@@ -295,14 +298,15 @@ ALTER TABLE `Jurusan Kelas`
 -- Constraints for table `Kelas`
 --
 ALTER TABLE `Kelas`
-  ADD CONSTRAINT `Kelas_ibfk_1` FOREIGN KEY (`ID Materi`) REFERENCES `Materi` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `Kelas_ibfk_1` FOREIGN KEY (`Pembuat`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Kelas_ibfk_2` FOREIGN KEY (`ID Materi`) REFERENCES `Materi` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `Pelajar`
 --
 ALTER TABLE `Pelajar`
-  ADD CONSTRAINT `Pelajar_ibfk_2` FOREIGN KEY (`ID User`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `Pelajar_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `Pelajar_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Pelajar_ibfk_2` FOREIGN KEY (`ID User`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `Pengajar`

@@ -1,7 +1,6 @@
 <?php ob_start(); session_start(); include_once('connect.inc');
 	function tanggal($date){
 		$Bulan = array("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember");
-		
 		$tahun = substr($date, 0, 4);
 		$bulan = substr($date, 5, 2);
 		$tgl   = substr($date, 8, 2);
@@ -11,38 +10,49 @@
 	}
 	function navigation(){
 		if(isset($_SESSION['imancha']['id'])){
-			$xo = '<ul class="nav navbar-nav">
-							<li><a href="./?buatkelas">Buat Kelas</a></li>
-							<li class="visible-xs"><a href="./?profile='.$_SESSION['imancha']['username'].'">Profile</a></li>
-							<li class="visible-xs"><a href="./?keluar">Keluar</a></li>
-						</ul>
-						<ul class="nav navbar-nav navbar-right hidden-xs">
-							<li class="dropdown user user-menu">
-								<a href="#" class="dropdown-toggle" data-toggle="dropdown">
-									<i class="glyphicon glyphicon-user"></i>&nbsp;
-									 <span>'.$_SESSION['imancha']['username'].' <i class="caret"></i></span>
-								</a>
-								<ul class="dropdown-menu">
-									<li class="user-header">
-										<img src="" class="img-circle" alt="User Image" />
-										<p>
-											'.$_SESSION['imancha']['nama'].'
-											<small>Member sejak - '.tanggal($_SESSION['imancha']['waktu']).'</small>
-										</p>
-									</li>
-									<li class="user-footer">
-										<div class="pull-left">
-											<button class="btn btn-info btn-flat" onclick="window.location=\'./?profile='.$_SESSION['imancha']['username'].'\'">Profile</button>
-										</div>
-										<div class="pull-right">
-											<button class="btn btn-danger btn-flat" onclick="window.location=\'./?keluar\'">Keluar</button>
-										</div>
-									</li>
+			mysql_open();
+			$sql = "SELECT * FROM `User` WHERE `ID`=".$_SESSION['imancha']['id']." LIMIT 1";
+			$res = @mysql_query($sql) or die(mysql_error());
+			if(mysql_num_rows($res) == 1){
+				$row = mysql_fetch_assoc($res);
+				$xo .= '<ul class="nav navbar-nav">
+									<li><a href="./?buatkelas">Buat Kelas</a></li>
+									<li class="visible-xs"><a href="./?profile='.$row['Username'].'">Profile</a></li>
+									<li class="visible-xs"><a href="./?keluar">Keluar</a></li>
 								</ul>
-							</li>
-						</ul>';
+								<ul class="nav navbar-nav navbar-right hidden-xs">
+									<li class="dropdown user user-menu">
+										<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+											<i class="glyphicon glyphicon-user"></i>&nbsp;
+											 <span>'.$row['Username'].'&nbsp; <i class="fa fa-caret-down"></i></span>
+										</a>
+										<ul class="dropdown-menu">
+											<li class="user-header">
+												<img src="./img/user/'.($row['Avatar']=="" ? "0.png" : $row['Avatar']).'" class="img-circle" alt="User Image" />
+												<p>
+													'.$row['Nama'].'
+													<small>Member sejak - '.tanggal($row['Waktu']).'</small>
+												</p>
+											</li>
+											<li class="user-footer">
+												<div class="pull-left">
+													<button class="btn btn-info btn-flat" onclick="window.location=\'./?profile='.$row['Username'].'\'">Profile</button>
+												</div>
+												<div class="pull-right">
+													<button class="btn btn-danger btn-flat" onclick="window.location=\'./?keluar\'">Keluar</button>
+												</div>
+											</li>
+										</ul>
+									</li>
+								</ul>';
+			}
+			mysql_close();
 		}else{
-			$xo = '<ul class="nav navbar-nav navbar-right">
+			$xo = '<ul class="nav navbar-nav visible-xs">
+							<li><a href="./?masuk">Masuk</a></li>
+							<li><a href="./?daftar">Daftar</a></li>
+						 </ul>
+						 <ul class="nav navbar-nav navbar-right hidden-xs">
 							<li class="dropdown">
 								<a class="dropdown-toggle" aria-expanded="false" data-close-others="true" data-hover="dropdown" data-toggle="dropdown" href="#"><i class="fa fa-sign-in" style="font-size:larger;"></i></a>
 								<ul class="dropdown-menu" role="menu">
@@ -64,9 +74,6 @@
 				$row = mysql_fetch_assoc($res);
 				session_start();
 				$_SESSION['imancha']['id'] = $row['ID'];
-				$_SESSION['imancha']['username'] = $row['Username'];
-				$_SESSION['imancha']['nama'] = $row['Nama'];
-				$_SESSION['imancha']['waktu'] = $row['Waktu'];
 				header('Location: ./');
 				exit();
 			}else{
@@ -121,9 +128,68 @@
 			}
 			if(empty($error)){
 				//	Create user
-				$sql = "INSERT INTO `User` VALUES (NULL,'".strip_tags(trim(mysql_real_escape_string($_POST['username'])))."',SHA1('".strip_tags(trim(mysql_real_escape_string($_POST['password'])))."'),'".strip_tags(trim(mysql_real_escape_string($_POST['nama'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['email'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['kota'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['phone'])))."',NOW())";
+				$sql = "INSERT INTO `User` VALUES (NULL,'".strip_tags(trim(mysql_real_escape_string($_POST['username'])))."',SHA1('".strip_tags(trim(mysql_real_escape_string($_POST['password'])))."'),'".strip_tags(trim(mysql_real_escape_string($_POST['nama'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['email'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['kota'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['phone'])))."',NOW(),'')";
 				$res = @mysql_query($sql) or die(mysql_error());
 				if(mysql_affected_rows() == 1){
+					if(!empty(basename($_FILES["avatar"]["name"]))){
+						$id = mysql_insert_id();
+						$target_dir = "./img/user/";
+						$target_file = $target_dir . basename($_FILES["avatar"]["name"]);
+						$uploadOk = 1;
+						$imageFileType = pathinfo($target_file,PATHINFO_EXTENSION);
+						$newfilename = $id.'.'.$imageFileType;
+						$target_file = $target_dir.$newfilename;
+						$check = getimagesize($_FILES["avatar"]["tmp_name"]);
+						if($check !== false){$uploadOk = 1;}
+						else{$uploadOk = 0;
+							echo '<div class="alert alert-warning">
+											<button class="close" type="button" data-dismiss="alert">x</button>
+											<strong>Oops! </strong>
+											File bukan berupa gambar.
+										</div>';
+						}
+						if($_FILES["avatar"]["size"] > 500000){$uploadOk = 0;
+							echo '<div class="alert alert-warning">
+											<button class="close" type="button" data-dismiss="alert">x</button>
+											<strong>Oops! </strong>
+											Ukuran file terlalu besar.
+										</div>';
+						}
+						if($imageFileType != "png" AND $imageFileType != "jpg" AND $imageFileType != "gif"){$uploadOk = 0;
+							echo '<div class="alert alert-warning">
+											<button class="close" type="button" data-dismiss="alert">x</button>
+											<strong>Oops! </strong>
+											File harus berformat .png .jpg .gif
+										</div>';
+						}
+						if($uploadOk == 0){$error = TRUE;}
+						else{
+							if(!move_uploaded_file($_FILES["avatar"]["tmp_name"], $target_file)){
+								$error = TRUE;
+								echo '<div class="alert alert-warning">
+												<button class="close" type="button" data-dismiss="alert">x</button>
+												<strong>Oops! </strong>
+												Error upload gambar.
+											</div>';
+							}else{
+								$sql = "UPDATE `User` SET `Avatar`='".$newfilename."' WHERE `ID`=".$id." LIMIT 1";
+								$res = @mysql_query($sql) or die(mysql_error());
+								if(mysql_affected_rows() != 1){
+									echo '<div class="alert alert-warning">
+													<button class="close" type="button" data-dismiss="alert">x</button>
+													<strong>Oops! </strong>
+													Error upload gambar.
+												</div>';
+								}
+							}
+						}
+					}else{
+						$xo .= '<div class="alert alert-success alert-dismissable" role="alert">
+											<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+											<strong>Oops! </strong>
+											 Gambar kosong.
+										</div>';
+					}
 					mysql_query("COMMIT");
 					$xo .= '<div class="alert alert-success alert-dismissable" role="alert">
 										<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -146,7 +212,7 @@
 			mysql_close();
 		}
 		$xo .= '<div class="jumbotron">
-							<form class="form-horizontal" method="post" action="" role="form">
+							<form class="form-horizontal" method="post" action="" enctype="multipart/form-data" role="form">
 								<div class="form-group">
 									<label for="nama" class="col-xs-12 col-sm-3 col-sm-offset-1 control-label">Nama Lengkap</label>
 									<div class="col-xs-12 col-sm-5">
@@ -184,6 +250,25 @@
 									</div>
 								</div>
 								<div class="form-group">
+									<label for="avatar" class="col-xs-12 col-sm-3 col-sm-offset-1 control-label">Avatar</label>
+									<div class="col-xs-12 col-sm-5">
+										<div class="fileupload fileupload-new" data-provides="fileupload">
+											<div class="input-group">
+												<div class="btn btn-file no-pad">
+													<button class="btn btn-xs fileupload-new">Pilih Avatar</button>
+													<button class="btn btn-xs fileupload-exists">Ganti</button>
+													<input type="file" id="avatar" name="avatar">
+												</div>
+												<button class="btn btn-xs fileupload-exists" data-dismiss="fileupload">Hapus</button>
+												<div class="uneditable-input">
+													<i class="fileupload-exists"></i>
+													<div class="fileupload-preview"></div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="form-group">
 									<div class="col-sm-offset-4 col-sm-8">
 										<button type="submit" class="btn btn-primary" name="submit">Daftar</button>
 										<button type="reset" class="btn btn-default">Reset</button>
@@ -218,7 +303,7 @@
 				}
 			}
 			//	Kelas
-			$sql = "INSERT INTO `Kelas` VALUES (NULL,'".strip_tags(trim(mysql_real_escape_string($_POST['tanggal'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['jam'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['lokasi'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['alamat'])))."',".strip_tags(trim(mysql_real_escape_string($_POST['kuota']))).",".($_POST['status']=='pelajar' ? '1' : '0').",".$idm.")";
+			$sql = "INSERT INTO `Kelas` VALUES (NULL,'".strip_tags(trim(mysql_real_escape_string($_POST['tanggal'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['jam'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['lokasi'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['alamat'])))."',".strip_tags(trim(mysql_real_escape_string($_POST['kuota']))).",".($_POST['status']=='pelajar' ? '1' : '0').",".$_SESSION['imancha']['id'].",".$idm.")";
 			$res = @mysql_query($sql) or die(mysql_error());
 			if(mysql_affected_rows() == 1){
 				$idk = mysql_insert_id();
@@ -435,6 +520,82 @@
 	}
 	function kelas(){
 		mysql_open();
+		if(isset($_GET['mengajar'])){
+			if($_GET['mengajar'] == 'ikut'){
+				$sql = "SELECT * FROM `Pengajar` WHERE SHA1(`ID Kelas`)='".$_GET['kelas']."' AND SHA1(`ID User`)='".$_GET['user']."' LIMIT 1";
+				$res = @mysql_query($sql) or die(mysql_error());
+				if(mysql_num_rows($res) == 0){
+					$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
+					$res = @mysql_query($sql) or die(mysql_error());
+					$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
+					$res_ = @mysql_query($sql_) or die(mysql_error());
+					if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
+						$row = mysql_fetch_assoc($res);
+						$row_ = mysql_fetch_assoc($res_);
+						$sql = "DELETE FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
+						$res = @mysql_query($sql) or die(mysql_error());
+						$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID'].") WHERE `ID`=".$row_['ID']." LIMIT 1";
+						$res = @mysql_query($sql) or die(mysql_error());
+						$sql = "INSERT INTO `Pengajar` VALUES (".$row_['ID'].",".$row['ID'].")";
+						$res = @mysql_query($sql) or die(mysql_error());
+					}
+				}
+			}else{
+				$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
+				$res = @mysql_query($sql) or die(mysql_error());
+				$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
+				$res_ = @mysql_query($sql_) or die(mysql_error());
+				if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
+					$row = mysql_fetch_assoc($res);
+					$row_ = mysql_fetch_assoc($res_);
+					$sql = "DELETE FROM `Pengajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
+					$res = @mysql_query($sql) or die(mysql_error());
+				}
+			}
+			header('Location: '.$_SERVER['HTTP_REFERER']);
+			exit();
+		}
+		if(isset($_GET['belajar'])){
+			if($_GET['belajar'] == 'ikut'){
+				$sql = "SELECT * FROM `Pelajar` WHERE SHA1(`ID Kelas`)='".$_GET['kelas']."' AND SHA1(`ID User`)='".$_GET['user']."' LIMIT 1";
+				$res = @mysql_query($sql) or die(mysql_error());
+				if(mysql_num_rows($res) == 0){
+					$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
+					$res = @mysql_query($sql) or die(mysql_error());
+					$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
+					$res_ = @mysql_query($sql_) or die(mysql_error());
+					if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
+						$row = mysql_fetch_assoc($res);
+						$row_ = mysql_fetch_assoc($res_);
+						$sql = "DELETE FROM `Pengajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
+						$res = @mysql_query($sql) or die(mysql_error());
+						$sql = "INSERT INTO `Pelajar` VALUES (".$row_['ID'].",".$row['ID'].")";
+						$res = @mysql_query($sql) or die(mysql_error());
+						if(mysql_affected_rows() == 1){
+							$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID'].") WHERE `ID`=".$row_['ID']." LIMIT 1";
+							$res = @mysql_query($sql) or die(mysql_error());
+						}
+					}
+				}
+			}else{
+				$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
+				$res = @mysql_query($sql) or die(mysql_error());
+				$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
+				$res_ = @mysql_query($sql_) or die(mysql_error());
+				if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
+					$row = mysql_fetch_assoc($res);
+					$row_ = mysql_fetch_assoc($res_);
+					$sql = "DELETE FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
+					$res = @mysql_query($sql) or die(mysql_error());
+					if(mysql_affected_rows() == 1){
+						$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID'].") WHERE `ID`=".$row_['ID']." LIMIT 1";
+						$res = @mysql_query($sql) or die(mysql_error());
+					}
+				}
+			}
+			header('Location: '.$_SERVER['HTTP_REFERER']);
+			exit();
+		}
 		$sql = "SELECT * FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
 		$res = @mysql_query($sql) or die(mysql_error());
 		if(mysql_num_rows($res) == 1){
@@ -452,6 +613,7 @@
 					$res___ = @mysql_query($sql___) or die(mysql_error());
 					if(mysql_num_rows($res___) == 1){
 						$row___ = mysql_fetch_assoc($res___);
+						if($row___['ID'] == $_SESSION['imancha']['id']){$bPengajar = true;}
 						$pengajar .= '<tr>
 														<td>'.++$i.'</td>
 														<td><a href="./?profile='.$row___['Username'].'" style="color:#333;">'.$row___['Nama'].'</a></td>
@@ -467,6 +629,7 @@
 					$res___ = @mysql_query($sql___) or die(mysql_error());
 					if(mysql_num_rows($res___) == 1){
 						$row___ = mysql_fetch_assoc($res___);
+						if($row___['ID'] == $_SESSION['imancha']['id']){$bPelajar = true;}
 						$pelajar .= '<tr>
 														<td>'.++$j.'</td>
 														<td><a href="./?profile='.$row___['Username'].'" style="color:#333;">'.$row___['Nama'].'</a></td>
@@ -479,6 +642,24 @@
 												<td>'.$k.'</td>
 												<td></td>
 										 </tr>';
+			}
+			if($bPengajar){
+				$bPengajar = '<div class="pull-right" style="margin-bottom:15px;">
+												<button class="btn btn-warning btn-flat" onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&mengajar=batal\'">Batal Mengajar</button>
+											</div>';
+			}else{
+				$bPengajar = '<div class="pull-right" style="margin-bottom:15px;">
+												<button class="btn btn-info btn-flat" '.(isset($_SESSION['imancha']['id']) ? 'onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&mengajar=ikut\'"' : 'data-toggle="modal" data-target="#myModal"').'>Ikut Mengajar</button>
+											</div>';
+			}
+			if($bPelajar){
+				$bPelajar = '<div class="pull-right" style="margin-bottom:15px;">
+											<button class="btn btn-warning btn-flat" onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&belajar=batal\'">Batal Belajar</button>
+										</div>';
+			}else{
+				$bPelajar = '<div class="pull-right" style="margin-bottom:15px;">
+											<button class="btn btn-success btn-flat" '.(isset($_SESSION['imancha']['id']) ? 'onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&belajar=ikut\'"' : 'data-toggle="modal" data-target="#myModal"').'>Ikut Belajar</button>
+										</div>';
 			}
 			$xo .= '<div class="panel panel-primary">
 								<div class="panel-heading">
@@ -507,7 +688,7 @@
 															'.$pengajar.'
 														</tbody>
 													</table>
-													<div style="margin-bottom:15px;"><button class="btn btn-warning">Ikut Mengajar</button></div>
+													'.$bPengajar.'
 												</div>
 												<div class="col-xs-12 col-md-6">
 													<table class="table table-striped table-condensed table-responsive table-hover">
@@ -521,7 +702,7 @@
 															'.$pelajar.'
 														</tbody>
 													</table>
-													<div style="margin-bottom:15px;"><button class="btn btn-success">Ikut Belajar</button></div>
+													'.$bPelajar.'
 												</div>
 											</div>
 										</div>
@@ -536,7 +717,24 @@
 										</div>
 									</div>
 								</div>
-							</div>';
+							</div>
+							<!-- Modal -->
+							<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+								<div class="modal-dialog">
+									<div class="modal-content">
+										<div class="modal-header">
+											<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+											<h4 class="modal-title" id="myModalLabel">Oops!</h4>
+										</div>
+										<div class="modal-body">
+											Silahkan <a href="./?masuk">masuk</a> atau <a href="./?daftar">daftar</a>.
+										</div>
+										<div class="modal-footer">
+											<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+										</div>
+									</div><!-- /.modal-content -->
+								</div><!-- /.modal-dialog -->
+							</div><!-- /.modal -->';
 		}
 		mysql_close();
 		echo $xo;
@@ -588,12 +786,151 @@
 		mysql_close();
 		echo $xo;
 	}
+	function profile(){
+		if(isset($_POST['submit'])){
+			mysql_open();
+			mysql_query("START TRANSACTION");
+			if(!empty(basename($_FILES["avatar"]["name"]))){
+				$target_dir = "./img/user/";
+				$target_file = $target_dir . basename($_FILES["avatar"]["name"]);
+				$uploadOk = 1;
+				$imageFileType = pathinfo($target_file,PATHINFO_EXTENSION);
+				$newfilename = mysql_real_escape_string(trim($_POST['id'])).'.'.$imageFileType;
+				$target_file = $target_dir.$newfilename;
+				$check = getimagesize($_FILES["avatar"]["tmp_name"]);
+				if($check !== false){$uploadOk = 1;}
+				else{$uploadOk = 0;
+					echo '<div class="alert alert-warning">
+									<button class="close" type="button" data-dismiss="alert">x</button>
+									<strong>Oops! </strong>
+									File bukan berupa gambar.
+								</div>';
+				}
+				if($_FILES["avatar"]["size"] > 500000){$uploadOk = 0;
+					echo '<div class="alert alert-warning">
+									<button class="close" type="button" data-dismiss="alert">x</button>
+									<strong>Oops! </strong>
+									Ukuran file terlalu besar.
+								</div>';
+				}
+				if($imageFileType != "png" AND $imageFileType != "jpg" AND $imageFileType != "gif"){$uploadOk = 0;
+					echo '<div class="alert alert-warning">
+									<button class="close" type="button" data-dismiss="alert">x</button>
+									<strong>Oops! </strong>
+									File harus berformat .png .jpg .gif
+								</div>';
+				}
+				if($uploadOk == 0){$error = TRUE;}
+				else{
+					if(!move_uploaded_file($_FILES["avatar"]["tmp_name"], $target_file)){
+						$error = TRUE;
+						echo '<div class="alert alert-warning">
+										<button class="close" type="button" data-dismiss="alert">x</button>
+										<strong>Oops! </strong>
+										Error upload gambar.
+									</div>';
+					}else{$avatar = ",`Avatar`='".$newfilename."'";}
+				}
+			}
+			if(!empty($_POST['password'])){$password="`Password`=SHA1('".strip_tags(trim(mysql_real_escape_string($_POST['password'])))."'),";}
+			$sql = "UPDATE `User` SET `Username`='".strip_tags(trim(mysql_real_escape_string($_POST['username'])))."',".$password."`Nama`='".strip_tags(trim(mysql_real_escape_string($_POST['nama'])))."',`Email`='".strip_tags(trim(mysql_real_escape_string($_POST['email'])))."',`Kota`='".strip_tags(trim(mysql_real_escape_string($_POST['kota'])))."',`Phone`='".strip_tags(trim(mysql_real_escape_string($_POST['phone'])))."'".$avatar." WHERE `ID`=".$_POST['id']." LIMIT 1";
+			$res = @mysql_query($sql) or die(mysql_error());
+			if(mysql_affected_rows() == 1){mysql_query("COMMIT");}else{mysql_query("ROLLBACK");}
+			mysql_close();
+		}
+		mysql_open();
+		$sql = "SELECT * FROM `User` WHERE `Username`='".$_GET['profile']."' LIMIT 1";
+		$res = @mysql_query($sql) or die(mysql_error());
+		if(mysql_num_rows($res) == 1){
+			$row = mysql_fetch_assoc($res);
+			if($_SESSION['imancha']['id'] == $row['ID']){
+				$id = '<div class="form-group">
+								<label class="col-sm-3 control-label">Username</label>
+								<div class="col-sm-9">
+									<input type="hidden" name="id" value="'.$row['ID'].'">
+									<input class="form-control" type="text" id="username" name="username" placeholder="'.$row['Username'].'" value="'.$row['Username'].'" autocomplete="off" required>
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-3 control-label">Password</label>
+								<div class="col-sm-9">
+									<input class="form-control" type="password" id="password" name="password" placeholder="Password" value="" autocomplete="off">
+								</div>
+							</div>';
+				$submit = '<div class="form-group">
+										<div class="col-xs-12">
+											<button type="submit" class="btn btn-warning pull-right" name="submit">Update Profile</button>
+										</div>
+									</div>';
+				$upload = '<div class="input-group" style="padding-top:10px;">
+											<div class="btn btn-file no-pad">
+												<button class="btn btn-xs fileupload-new">Pilih Avatar</button>
+												<button class="btn btn-xs fileupload-exists">Ganti</button>
+												<input type="file" id="avatar" name="avatar">
+											</div>
+											<button class="btn btn-xs fileupload-exists" data-dismiss="fileupload">Hapus</button>
+											<br>
+											<div class="uneditable-input">
+												<i class="fileupload-exists"></i>
+												<div class="fileupload-preview"></div>
+											</div>
+										</div>';
+			}else{
+				$disabled = 'disabled';
+			}
+			$xo .= '<div class="jumbotron">
+								<div class="row profile">
+									<form class="form-horizontal" method="post" action="" enctype="multipart/form-data" role="form">
+										<div class="col-xs-12 col-sm-3 col-md-2 col-md-offset-1 text-center">
+											<div class="fileupload fileupload-new" data-provides="fileupload">
+												<div data-toggle="tooltip" data-placement="bottom" title="imancha">
+													<img id="img" class="img-thumbnail" src="./img/user/'.($row['Avatar']=="" ? "0.png" : $row['Avatar']).'"></img>
+												</div>
+												'.$upload.'
+											</div>
+										</div>
+										<div class="col-xs-12 col-sm-9 col-md-8">
+												'.$id.'
+												<div class="form-group">
+													<label class="col-sm-3 control-label">Nama</label>
+													<div class="col-sm-9">
+														<input class="form-control" type="text" id="nama" name="nama" placeholder="'.$row['Nama'].'" value="'.$row['Nama'].'" autocomplete="off" required '.$disabled.'>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-3 control-label">Email</label>
+													<div class="col-sm-9">
+														<input class="form-control" type="email" id="email" name="email" placeholder="'.$row['Email'].'" value="'.$row['Email'].'" autocomplete="off" required '.$disabled.'>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-3 control-label">Kota</label>
+													<div class="col-sm-9">
+														<input class="form-control" type="text" id="kota" name="kota" placeholder="'.$row['Kota'].'" value="'.$row['Kota'].'" autocomplete="off" required '.$disabled.'>
+													</div>
+												</div>
+												<div class="form-group">
+													<label class="col-sm-3 control-label">Phone</label>
+													<div class="col-sm-9">
+														<input class="form-control" type="text" id="phone" name="phone" placeholder="'.$row['Phone'].'" value="'.$row['Phone'].'" autocomplete="off" required '.$disabled.'>
+													</div>
+												</div>
+												'.$submit.'
+										</div>
+									</form>
+								</div>
+							</div>';
+		}
+		mysql_close();
+		echo $xo;
+	}
 	function main(){
 		if(isset($_GET['masuk'])){masuk();}
 		elseif(isset($_GET['daftar'])){daftar();}
 		elseif(isset($_GET['keluar'])){keluar();}
 		elseif(isset($_GET['buatkelas'])){buatkelas();}
 		elseif(isset($_GET['kelas'])){kelas();}
+		elseif(isset($_GET['profile'])){profile();}
 		else{home();}
 	}
 ?>

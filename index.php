@@ -47,12 +47,10 @@
 		<!-- Placed at the end of the document so the pages load faster -->
 		<script src="js/jquery-2.1.3.min.js"></script>
 		<script src="js/bootstrap.min.js"></script>
-		<!-- bootstrap date picker -->
 		<script src="js/bootstrap-datepicker.js"></script>
-		<!-- bootstrap time picker -->
 		<script src="js/bootstrap-timepicker.min.js"></script>
 		<script src="js/bootstrap-tagsinput.js"></script>
-		<!-- Page script -->
+		<script src="js/bootstrap-fileupload.min.js"></script>
 		<script src="js/scripts.js"></script>
 		<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 		<script src="js/ie10-viewport-bug-workaround.js"></script>

@@ -9,4 +9,5 @@ $(function() {
 		showInputs: false,
 		showMeridian: false
 	});
+	$("[data-toggle='tooltip']").tooltip();
 });

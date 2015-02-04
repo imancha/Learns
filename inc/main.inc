@@ -9,6 +9,12 @@
 		return($result);
 	}
 	function navigation(){
+		if(isset($_GET['daftar'])){$z = ' active';}
+		elseif(isset($_GET['masuk'])){$y = ' active';}
+		elseif(isset($_GET['profile'])){$c = ' active';}
+		elseif(isset($_GET['buatkelas'])){$b = ' active';}
+		elseif(isset($_GET['timeline'])){$a = ' active';}
+		
 		if(isset($_SESSION['imancha']['id'])){
 			mysql_open();
 			$sql = "SELECT * FROM `User` WHERE `ID`=".$_SESSION['imancha']['id']." LIMIT 1";
@@ -16,8 +22,9 @@
 			if(mysql_num_rows($res) == 1){
 				$row = mysql_fetch_assoc($res);
 				$xo .= '<ul class="nav navbar-nav">
-									<li><a href="./?buatkelas">Buat Kelas</a></li>
-									<li class="visible-xs"><a href="./?profile='.$row['Username'].'">Profile</a></li>
+									<li class="'.$a.'"><a href="./?timeline">Timeline</a></li>
+									<li class="'.$b.'"><a href="./?buatkelas">Buat Kelas</a></li>
+									<li class="visible-xs'.$c.'"><a href="./?profile='.$row['Username'].'">Profile</a></li>
 									<li class="visible-xs"><a href="./?keluar">Keluar</a></li>
 								</ul>
 								<ul class="nav navbar-nav navbar-right hidden-xs">
@@ -49,8 +56,8 @@
 			mysql_close();
 		}else{
 			$xo = '<ul class="nav navbar-nav visible-xs">
-							<li><a href="./?masuk">Masuk</a></li>
-							<li><a href="./?daftar">Daftar</a></li>
+							<li class="'.$y.'"><a href="./?masuk">Masuk</a></li>
+							<li class="'.$z.'"><a href="./?daftar">Daftar</a></li>
 						 </ul>
 						 <ul class="nav navbar-nav navbar-right hidden-xs">
 							<li class="dropdown">
@@ -131,7 +138,7 @@
 				$sql = "INSERT INTO `User` VALUES (NULL,'".strip_tags(trim(mysql_real_escape_string($_POST['username'])))."',SHA1('".strip_tags(trim(mysql_real_escape_string($_POST['password'])))."'),'".strip_tags(trim(mysql_real_escape_string($_POST['nama'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['email'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['kota'])))."','".strip_tags(trim(mysql_real_escape_string($_POST['phone'])))."',NOW(),'')";
 				$res = @mysql_query($sql) or die(mysql_error());
 				if(mysql_affected_rows() == 1){
-					if(!empty(basename($_FILES["avatar"]["name"]))){
+					if($_FILES['avatar']['size'] > 0){
 						$id = mysql_insert_id();
 						$target_dir = "./img/user/";
 						$target_file = $target_dir . basename($_FILES["avatar"]["name"]);
@@ -309,12 +316,12 @@
 				$idk = mysql_insert_id();
 				if($_POST['status'] == 'pengajar'){$status = 'Pengajar';}
 				else{$status = 'Pelajar';}
-				$sql = "INSERT INTO `".$status."` VALUES (".$idk.",".$_SESSION['imancha']['id'].")";
+				$sql = "INSERT INTO `Belajar` VALUES (".$idk.",".$_SESSION['imancha']['id'].",'".$status."')";
 				$res = @mysql_query($sql) or die(mysql_error());
 				if(mysql_affected_rows() != 1){
 					$error[] = '<div class="alert alert-danger alert-dismissable" role="alert">
 												<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-												<strong>[ERR-'.$status.'] </strong>
+												<strong>[ERR-Belajar] </strong>
 												 Terjadi kesalahan. Silahkan coba lagi.
 											</div>';
 				}
@@ -520,78 +527,34 @@
 	}
 	function kelas(){
 		mysql_open();
-		if(isset($_GET['mengajar'])){
-			if($_GET['mengajar'] == 'ikut'){
-				$sql = "SELECT * FROM `Pengajar` WHERE SHA1(`ID Kelas`)='".$_GET['kelas']."' AND SHA1(`ID User`)='".$_GET['user']."' LIMIT 1";
-				$res = @mysql_query($sql) or die(mysql_error());
-				if(mysql_num_rows($res) == 0){
-					$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
+		if(isset($_GET['mengajar']) OR isset($_GET['belajar']) OR isset($_GET['batal'])){
+			$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
+			$res = @mysql_query($sql) or die(mysql_error());
+			$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
+			$res_ = @mysql_query($sql_) or die(mysql_error());
+			if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
+				$row = mysql_fetch_assoc($res);
+				$row_ = mysql_fetch_assoc($res_);
+				if(isset($_GET['mengajar'])){
+					$sql = "UPDATE `Belajar` SET `Status`='Pengajar' WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
 					$res = @mysql_query($sql) or die(mysql_error());
-					$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
-					$res_ = @mysql_query($sql_) or die(mysql_error());
-					if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
-						$row = mysql_fetch_assoc($res);
-						$row_ = mysql_fetch_assoc($res_);
-						$sql = "DELETE FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
-						$res = @mysql_query($sql) or die(mysql_error());
-						$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID'].") WHERE `ID`=".$row_['ID']." LIMIT 1";
-						$res = @mysql_query($sql) or die(mysql_error());
-						$sql = "INSERT INTO `Pengajar` VALUES (".$row_['ID'].",".$row['ID'].")";
-						$res = @mysql_query($sql) or die(mysql_error());
+					if(mysql_affected_rows() == 0){
+						$sql = "INSERT INTO `Belajar` VALUES (".$row_['ID'].",".$row['ID'].",'Pengajar')";
+						$res = mysql_query($sql) or die(mysql_error());
 					}
-				}
-			}else{
-				$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
-				$res = @mysql_query($sql) or die(mysql_error());
-				$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
-				$res_ = @mysql_query($sql_) or die(mysql_error());
-				if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
-					$row = mysql_fetch_assoc($res);
-					$row_ = mysql_fetch_assoc($res_);
-					$sql = "DELETE FROM `Pengajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
+				}elseif(isset($_GET['belajar'])){
+					$sql = "UPDATE `Belajar` SET `Status`='Pelajar' WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
 					$res = @mysql_query($sql) or die(mysql_error());
-				}
-			}
-			header('Location: '.$_SERVER['HTTP_REFERER']);
-			exit();
-		}
-		if(isset($_GET['belajar'])){
-			if($_GET['belajar'] == 'ikut'){
-				$sql = "SELECT * FROM `Pelajar` WHERE SHA1(`ID Kelas`)='".$_GET['kelas']."' AND SHA1(`ID User`)='".$_GET['user']."' LIMIT 1";
-				$res = @mysql_query($sql) or die(mysql_error());
-				if(mysql_num_rows($res) == 0){
-					$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
-					$res = @mysql_query($sql) or die(mysql_error());
-					$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
-					$res_ = @mysql_query($sql_) or die(mysql_error());
-					if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
-						$row = mysql_fetch_assoc($res);
-						$row_ = mysql_fetch_assoc($res_);
-						$sql = "DELETE FROM `Pengajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
-						$res = @mysql_query($sql) or die(mysql_error());
-						$sql = "INSERT INTO `Pelajar` VALUES (".$row_['ID'].",".$row['ID'].")";
-						$res = @mysql_query($sql) or die(mysql_error());
-						if(mysql_affected_rows() == 1){
-							$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID'].") WHERE `ID`=".$row_['ID']." LIMIT 1";
-							$res = @mysql_query($sql) or die(mysql_error());
-						}
+					if(mysql_affected_rows() == 0){
+						$sql = "INSERT INTO `Belajar` VALUES (".$row_['ID'].",".$row['ID'].",'Pelajar')";
+						$res = mysql_query($sql) or die(mysql_error());
 					}
-				}
-			}else{
-				$sql = "SELECT `ID` FROM `User` WHERE SHA1(`ID`)='".$_GET['user']."' LIMIT 1";
-				$res = @mysql_query($sql) or die(mysql_error());
-				$sql_ = "SELECT `ID` FROM `Kelas` WHERE SHA1(`ID`)='".$_GET['kelas']."' LIMIT 1";
-				$res_ = @mysql_query($sql_) or die(mysql_error());
-				if(mysql_num_rows($res) == 1 AND mysql_num_rows($res_) == 1){
-					$row = mysql_fetch_assoc($res);
-					$row_ = mysql_fetch_assoc($res_);
-					$sql = "DELETE FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
+				}else{
+					$sql = "DELETE FROM `Belajar` WHERE `ID Kelas`=".$row_['ID']." AND `ID User`=".$row['ID']." LIMIT 1";
 					$res = @mysql_query($sql) or die(mysql_error());
-					if(mysql_affected_rows() == 1){
-						$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Pelajar` WHERE `ID Kelas`=".$row_['ID'].") WHERE `ID`=".$row_['ID']." LIMIT 1";
-						$res = @mysql_query($sql) or die(mysql_error());
-					}
 				}
+				$sql = "UPDATE `Kelas` SET `Terisi`=(SELECT COUNT(*) FROM `Belajar` WHERE `ID Kelas`=".$row_['ID']." AND `Status`='Pelajar') WHERE `ID`=".$row_['ID']." LIMIT 1";
+				$res = @mysql_query($sql) or die(mysql_error());
 			}
 			header('Location: '.$_SERVER['HTTP_REFERER']);
 			exit();
@@ -605,7 +568,7 @@
 			if(mysql_num_rows($res_) == 1){
 				$row_ = mysql_fetch_assoc($res_);
 			}
-			$sql__ = "SELECT * FROM `Pengajar` WHERE `ID Kelas`=".$row['ID']."";
+			$sql__ = "SELECT * FROM `Belajar` WHERE `ID Kelas`=".$row['ID']." AND `Status`='Pengajar'";
 			$res__ = @mysql_query($sql__) or die(mysql_error());
 			if(mysql_num_rows($res__) > 0){
 				while($row__ = mysql_fetch_assoc($res__)){
@@ -621,7 +584,7 @@
 					}
 				}
 			}
-			$sql__ = "SELECT * FROM `Pelajar` WHERE `ID Kelas`=".$row['ID']."";
+			$sql__ = "SELECT * FROM `Belajar` WHERE `ID Kelas`=".$row['ID']." AND `Status`='Pelajar'";
 			$res__ = @mysql_query($sql__) or die(mysql_error());
 			if(mysql_num_rows($res__) > 0){
 				while($row__ = mysql_fetch_assoc($res__)){
@@ -645,27 +608,34 @@
 			}
 			if($bPengajar){
 				$bPengajar = '<div class="pull-right" style="margin-bottom:15px;">
-												<button class="btn btn-warning btn-flat" onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&mengajar=batal\'">Batal Mengajar</button>
+												<button class="btn btn-warning btn-flat" onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&batal\'">Batal Mengajar</button>
 											</div>';
 			}else{
 				$bPengajar = '<div class="pull-right" style="margin-bottom:15px;">
-												<button class="btn btn-info btn-flat" '.(isset($_SESSION['imancha']['id']) ? 'onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&mengajar=ikut\'"' : 'data-toggle="modal" data-target="#myModal"').'>Ikut Mengajar</button>
+												<button class="btn btn-info btn-flat" '.(isset($_SESSION['imancha']['id']) ? 'onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&mengajar\'"' : 'data-toggle="modal" data-target="#myModal"').'>Ikut Mengajar</button>
 											</div>';
 			}
 			if($bPelajar){
 				$bPelajar = '<div class="pull-right" style="margin-bottom:15px;">
-											<button class="btn btn-warning btn-flat" onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&belajar=batal\'">Batal Belajar</button>
+											<button class="btn btn-warning btn-flat" onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&batal\'">Batal Belajar</button>
 										</div>';
 			}else{
-				$bPelajar = '<div class="pull-right" style="margin-bottom:15px;">
-											<button class="btn btn-success btn-flat" '.(isset($_SESSION['imancha']['id']) ? 'onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&belajar=ikut\'"' : 'data-toggle="modal" data-target="#myModal"').'>Ikut Belajar</button>
-										</div>';
+				$sql__ = "SELECT `Kuota`,`Terisi` FROM `Kelas` WHERE `ID`=".$row['ID']." LIMIT 1";
+				$res__ = @mysql_query($sql__) or die(mysql_error());
+				if(mysql_num_rows($res__) == 1){
+					$row__ = mysql_fetch_assoc($res__);
+					if($row__['Kuota'] != $row__['Terisi']){
+						$bPelajar = '<div class="pull-right" style="margin-bottom:15px;">
+													<button class="btn btn-success btn-flat" '.(isset($_SESSION['imancha']['id']) ? 'onclick="window.location=\'./?kelas='.$_GET['kelas'].'&user='.SHA1($_SESSION['imancha']['id']).'&belajar\'"' : 'data-toggle="modal" data-target="#myModal"').'>Ikut Belajar</button>
+												</div>';
+					}
+				}
 			}
 			$xo .= '<div class="panel panel-primary">
 								<div class="panel-heading">
 									<div class="row">
 										<div class="col-xs-12 col-sm-4 col-sm-push-8 text-right">
-											<h3 class="panel-title">'.tanggal($row['Tanggal']).' '.$row['Jam'].'</h3>
+											<h3 class="panel-title">'.tanggal($row['Tanggal']).' '.substr($row['Jam'],0,5).'</h3>
 										</div>
 										<div class="col-xs-12 col-sm-8 col-sm-pull-4">
 											<h3 class="panel-title">'.$row_['Nama'].'</h3>
@@ -759,7 +729,7 @@
 												<div class="row">
 													<div class="col-xs-12 col-sm-6 text-center">
 														<strong>'.tanggal($row['Tanggal']).'</strong>
-														<h3>'.$row['Jam'].'</h3>
+														<h3>'.substr($row['Jam'],0,5).'</h3>
 													</div>
 													<div class="col-xs-12 col-sm-6 text-center">
 														<h2>'.$row['Lokasi'].'</h2>
@@ -790,7 +760,7 @@
 		if(isset($_POST['submit'])){
 			mysql_open();
 			mysql_query("START TRANSACTION");
-			if(!empty(basename($_FILES["avatar"]["name"]))){
+			if($_FILES['avatar']['size'] > 0){
 				$target_dir = "./img/user/";
 				$target_file = $target_dir . basename($_FILES["avatar"]["name"]);
 				$uploadOk = 1;
@@ -924,6 +894,105 @@
 		mysql_close();
 		echo $xo;
 	}
+	function timeline(){
+		if(!isset($_SESSION['imancha']['id'])){header('Location: ./?masuk'); exit();}
+		mysql_open();
+		if(isset($_POST['submit'])){
+			$sql = "INSERT INTO `Review` VALUES (".$_POST['kelas'].",".$_SESSION['imancha']['id'].",'".strip_tags(trim(mysql_real_escape_string($_POST['review'])))."',NOW())";
+			$res = @mysql_query($sql) or die(mysql_error());
+			if(mysql_affected_rows() == 1){
+				header('Location: ./?timeline');
+				exit();
+			}else{
+				$xo .= '<div class="alert alert-danger">
+									<button class="close" type="button" data-dismiss="alert">x</button>
+									<strong>Oops! </strong>
+									Terjadi kesalahan. Silahkan coba lagi.
+								</div>';
+			}
+		}
+		$sql = "SELECT a.`ID`,a.`Tanggal`,b.`Nama` FROM `Kelas` a JOIN `Materi` b ON a.`ID Materi`=b.`ID` JOIN `Belajar` c ON a.`ID`=c.`ID Kelas` JOIN `User` d ON c.`ID User`=d.`ID` WHERE d.`ID`=".$_SESSION['imancha']['id']." ORDER BY a.`Tanggal` DESC";
+		$res = @mysql_query($sql) or die(mysql_error());
+		if(mysql_num_rows($res) > 0){
+			$xo .= '<div class="row">
+								<div class="col-md-12">
+									<ul class="timeline">';
+			while($row = mysql_fetch_assoc($res)){
+				$sql_ = "SELECT * FROM `Review` WHERE `ID Kelas`=".$row['ID']." AND `ID User`=".$_SESSION['imancha']['id']." LIMIT 1";
+				$res_ = @mysql_query($sql_) or die(mysql_error());
+				if(mysql_num_rows($res_) == 1){
+					$row_ = mysql_fetch_assoc($res_);
+					$review = '<p>'.$row_['Review'].'</p>';
+				}else{
+					$review = '<form method="post" action="" role="form">
+											<div class="form-group">
+												<label for="name" class="sr-only">Text Area</label>
+												<input type="hidden" name="kelas" value="'.$row['ID'].'">
+												<textarea class="form-control btn-flat" rows="3" placeholder="Tulis Review . . ." name="review"></textarea>
+											</div>
+											<div class="form-group">
+												<div class="pull-right" style="margin-bottom:25px;">
+													<button class="btn btn-default btn-flat" type="submit" name="submit">Simpan</button>
+												</div>
+											</div>
+										</form>';
+				}
+				$sql_ = "SELECT * FROM `Jurusan Kelas` WHERE `ID Kelas`=".$row['ID']."";
+				$res_ = @mysql_query($sql_) or die(mysql_error());
+				if(mysql_num_rows($res_) > 0){
+					while($row_ = mysql_fetch_assoc($res_)){
+						$sql__ = "SELECT * FROM `Jurusan` WHERE `ID`=".$row_['ID Jurusan']." LIMIT 1";
+						$res__ = @mysql_query($sql__) or die(mysql_error());
+						if(mysql_num_rows($res__) == 1){
+							$row__ = mysql_fetch_assoc($res__);
+							$inf[] = $row__['Nama'];
+						}
+					}
+					$info = implode(', ',$inf);
+					$inf = '';
+				}else{
+					$info = 'Umum';
+				}
+				$i++;
+				$xo .= '<li'.($i%2==0 ? ' class="timeline-inverted"' : '').'>
+									<div class="timeline-badge'.($i%2==0 ? ' invert' : '').' bg-gray"></div>
+									<div class="timeline-info'.($i%2==0 ? '' : ' inverted').'">
+										<div class="float-right">
+											<div class="timeline-info-time">
+												<div><i class="fa fa-tags'.($i%2==0 ? ' fa-flip-horizontal fa-md' : '').' c-gray"></i></div>
+												<div class="c-gray timeline-info-hour">&nbsp;</div>
+											</div>
+											<div class="timeline-info-type c-gray'.($i%2==0 ? ' m-md' : '').'">'.$info.'</div>
+										</div>
+									</div>
+									<div class="timeline-panel">
+										<div class="timeline-heading">
+											<div class="pull-left">
+												<div class="timeline-day-number">'.substr($row['Tanggal'],8,2).'</div>
+												<div>
+													<div class="timeline-day">'.substr(tanggal($row['Tanggal']),3,strlen(tanggal($row['Tanggal']))-8).'</div>
+													<div class="timeline-month c-gray">'.substr(tanggal($row['Tanggal']),strlen(tanggal($row['Tanggal']))-4,strlen(tanggal($row['Tanggal']))-3).'</div>
+												</div>
+											</div>
+											<div class="pull-right">
+												<div class="sr-only">
+													<a href="#" rel="tooltip" data-toggle="tooltip" data-placement="top" title="Edit"><i class="fa fa-pencil-square-o"></i></a>
+													<a href="#" rel="tooltip" data-toggle="tooltip" data-placement="top" title="Share"><i class="fa fa-share"></i></a>
+													<a href="#" rel="tooltip" data-toggle="tooltip" data-placement="top" title="Remove"><i class="fa fa-times"></i></a>
+												</div>
+											</div>
+										</div>
+										<div class="timeline-body">
+											<h4><strong>'.$row['Nama'].'</strong></h4>
+											'.$review.'
+										</div>
+									</div>
+								</li>';
+			}
+		}
+		mysql_close();
+		echo $xo;
+	}
 	function main(){
 		if(isset($_GET['masuk'])){masuk();}
 		elseif(isset($_GET['daftar'])){daftar();}
@@ -931,6 +1000,7 @@
 		elseif(isset($_GET['buatkelas'])){buatkelas();}
 		elseif(isset($_GET['kelas'])){kelas();}
 		elseif(isset($_GET['profile'])){profile();}
+		elseif(isset($_GET['timeline'])){timeline();}
 		else{home();}
 	}
 ?>

@@ -3,8 +3,8 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Feb 02, 2015 at 01:02 AM
--- Server version: 5.5.40-0ubuntu0.14.04.1
+-- Generation Time: Feb 04, 2015 at 09:39 PM
+-- Server version: 5.5.41-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.5
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -19,6 +19,30 @@ SET time_zone = "+00:00";
 --
 -- Database: `Learns`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `Belajar`
+--
+
+CREATE TABLE IF NOT EXISTS `Belajar` (
+  `ID Kelas` int(11) NOT NULL,
+  `ID User` int(11) NOT NULL,
+  `Status` enum('Pengajar','Pelajar') NOT NULL,
+  KEY `ID Kelas` (`ID Kelas`,`ID User`),
+  KEY `ID User` (`ID User`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `Belajar`
+--
+
+INSERT INTO `Belajar` (`ID Kelas`, `ID User`, `Status`) VALUES
+(4, 1, 'Pelajar'),
+(3, 1, 'Pengajar'),
+(2, 1, 'Pelajar'),
+(1, 1, 'Pengajar');
 
 -- --------------------------------------------------------
 
@@ -122,44 +146,24 @@ INSERT INTO `Materi` (`ID`, `Nama`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `Pelajar`
+-- Table structure for table `Review`
 --
 
-CREATE TABLE IF NOT EXISTS `Pelajar` (
+CREATE TABLE IF NOT EXISTS `Review` (
   `ID Kelas` int(11) NOT NULL,
   `ID User` int(11) NOT NULL,
+  `Review` text NOT NULL,
+  `Waktu` datetime NOT NULL,
   KEY `ID Kelas` (`ID Kelas`),
   KEY `ID User` (`ID User`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
--- Dumping data for table `Pelajar`
+-- Dumping data for table `Review`
 --
 
-INSERT INTO `Pelajar` (`ID Kelas`, `ID User`) VALUES
-(4, 1),
-(2, 1);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `Pengajar`
---
-
-CREATE TABLE IF NOT EXISTS `Pengajar` (
-  `ID Kelas` int(11) NOT NULL,
-  `ID User` int(11) NOT NULL,
-  KEY `ID Kelas` (`ID Kelas`),
-  KEY `ID User` (`ID User`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Dumping data for table `Pengajar`
---
-
-INSERT INTO `Pengajar` (`ID Kelas`, `ID User`) VALUES
-(1, 1),
-(3, 1);
+INSERT INTO `Review` (`ID Kelas`, `ID User`, `Review`, `Waktu`) VALUES
+(4, 1, 'Ini adalah sebuah review untuk kelas `Bahasa Inggris`', '2015-02-04 13:01:20');
 
 -- --------------------------------------------------------
 
@@ -288,11 +292,18 @@ INSERT INTO `User` (`ID`, `Username`, `Password`, `Nama`, `Email`, `Kota`, `Phon
 --
 
 --
+-- Constraints for table `Belajar`
+--
+ALTER TABLE `Belajar`
+  ADD CONSTRAINT `Belajar_ibfk_2` FOREIGN KEY (`ID User`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Belajar_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints for table `Jurusan Kelas`
 --
 ALTER TABLE `Jurusan Kelas`
-  ADD CONSTRAINT `Jurusan Kelas_ibfk_2` FOREIGN KEY (`ID Jurusan`) REFERENCES `Jurusan` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `Jurusan Kelas_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `Jurusan Kelas_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Jurusan Kelas_ibfk_2` FOREIGN KEY (`ID Jurusan`) REFERENCES `Jurusan` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `Kelas`
@@ -302,32 +313,25 @@ ALTER TABLE `Kelas`
   ADD CONSTRAINT `Kelas_ibfk_2` FOREIGN KEY (`ID Materi`) REFERENCES `Materi` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `Pelajar`
+-- Constraints for table `Review`
 --
-ALTER TABLE `Pelajar`
-  ADD CONSTRAINT `Pelajar_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `Pelajar_ibfk_2` FOREIGN KEY (`ID User`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `Pengajar`
---
-ALTER TABLE `Pengajar`
-  ADD CONSTRAINT `Pengajar_ibfk_2` FOREIGN KEY (`ID User`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `Pengajar_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `Review`
+  ADD CONSTRAINT `Review_ibfk_2` FOREIGN KEY (`ID User`) REFERENCES `User` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Review_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `Semester Kelas`
 --
 ALTER TABLE `Semester Kelas`
-  ADD CONSTRAINT `Semester Kelas_ibfk_2` FOREIGN KEY (`ID Semester`) REFERENCES `Semester` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `Semester Kelas_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `Semester Kelas_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Semester Kelas_ibfk_2` FOREIGN KEY (`ID Semester`) REFERENCES `Semester` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `Tingkat Kelas`
 --
 ALTER TABLE `Tingkat Kelas`
-  ADD CONSTRAINT `Tingkat Kelas_ibfk_2` FOREIGN KEY (`ID Tingkat`) REFERENCES `Tingkat` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `Tingkat Kelas_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `Tingkat Kelas_ibfk_1` FOREIGN KEY (`ID Kelas`) REFERENCES `Kelas` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `Tingkat Kelas_ibfk_2` FOREIGN KEY (`ID Tingkat`) REFERENCES `Tingkat` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

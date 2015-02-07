@@ -4,7 +4,6 @@
 		$tahun = substr($date, 0, 4);
 		$bulan = substr($date, 5, 2);
 		$tgl   = substr($date, 8, 2);
-
 		$result = $tgl . " " . $Bulan[(int)$bulan-1] . " ". $tahun;
 		return($result);
 	}
@@ -443,7 +442,8 @@
 			}
 			mysql_close();
 		}
-		$xo .= '<div class="jumbotron">
+		$xo .= '
+						<div class="jumbotron">
 							<form method="post" action="" class="form-horizontal" role="form">
 								<div class="form-group">
 									<label for="materi" class="col-xs-12 col-sm-2 col-md-1 control-label">Materi</label>
@@ -512,7 +512,7 @@
 									<div class="form-group">
 										<label for="alamat" class="col-xs-12 col-sm-2 col-md-2 pad-alamat control-label">Alamat</label>
 										<div class="col-xs-12 col-sm-10 col-md-10 pad-div-alamat">
-											<textarea class="form-control" rows="3" id="alamat" name="alamat" placeholder="Jalan Dipatiukur No. 123 Bandung" value="" autocomplete="off" required></textarea>
+											<textarea class="form-control" rows="3" id="alamat" name="alamat" placeholder="Jalan Dipatiukur No. 123 Bandung" value="" autocomplete="off" onkeyup="codeAddress()" onchange="setAddress()" required></textarea>
 										</div>
 									</div>
 								</div>
@@ -522,7 +522,12 @@
 									</div>
 								</div>
 							</form>
-						</div>';
+						</div>
+						<!-- Google Map API	-->
+						<script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+						<script src="./js/gmaps.js"></script>
+						<script>init(\'x\');</script>
+						<div id="map-canvas"></div>';
 		echo $xo;
 	}
 	function kelas(){
@@ -684,6 +689,16 @@
 													</tr>
 												</thead>
 											</table>
+											<div class="sr-only">
+												<input type="text" id="alamat" value="'.$row['Alamat'].'">
+											</div>
+											<!-- Google Map API	-->
+											<script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+											<script src="./js/gmaps.js"></script>
+											<script>
+												init(\'y\');
+											</script>
+											<div id="map-canvas"></div>
 										</div>
 									</div>
 								</div>
@@ -727,7 +742,7 @@
 											</div>
 											<div class="panel-body">
 												<div class="row">
-													<div class="col-xs-12 col-sm-6 text-center">
+													<div class="col-xs-12 col-sm-6 text-center b-xs" style="border-right:1px solid #eee;">
 														<strong>'.tanggal($row['Tanggal']).'</strong>
 														<h3>'.substr($row['Jam'],0,5).'</h3>
 													</div>

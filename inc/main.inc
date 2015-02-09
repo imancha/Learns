@@ -584,7 +584,9 @@
 						if($row___['ID'] == $_SESSION['imancha']['id']){$bPengajar = true;}
 						$pengajar .= '<tr>
 														<td>'.++$i.'</td>
-														<td><a href="./?profile='.$row___['Username'].'" style="color:#333;">'.$row___['Nama'].'</a></td>
+														<td>
+															'.($row['Pembuat']==$row___['ID'] ? '<a href="./?profile='.$row___['Username'].'" style="color:#333;" data-toggle="tooltip" title="Pembuat Kelas">'.$row___['Nama'].'</a><span class="pull-right fa fa-thumb-tack"></span>' : '<a href="./?profile='.$row___['Username'].'" style="color:#333;">'.$row___['Nama'].'</a>').'
+														</td>
 													</tr>';
 					}
 				}
@@ -600,7 +602,7 @@
 						if($row___['ID'] == $_SESSION['imancha']['id']){$bPelajar = true;}
 						$pelajar .= '<tr>
 														<td>'.++$j.'</td>
-														<td><a href="./?profile='.$row___['Username'].'" style="color:#333;">'.$row___['Nama'].'</a></td>
+														<td>'.($row['Pembuat']==$row___['ID'] ? '<a href="./?profile='.$row___['Username'].'" style="color:#333;" data-toggle="tooltip" title="Pembuat Kelas">'.$row___['Nama'].'</a><span class="pull-right fa fa-thumb-tack"></span>' : '<a href="./?profile='.$row___['Username'].'" style="color:#333;">'.$row___['Nama'].'</a>').'</td>
 													</tr>';
 					}
 				}
